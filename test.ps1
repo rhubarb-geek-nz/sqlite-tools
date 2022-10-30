@@ -22,7 +22,11 @@ trap
 	throw $PSItem
 }
 
-@"
+$Found = $False
+
+foreach ($App in "${Env:ProgramFiles(x86)}\SQLite Tools\sqlite3.exe", "${Env:ProgramFiles}\SQLite Tools\sqlite3.exe") {
+	if (Test-Path -Path "$App") {
+		@"
 CREATE TABLE MESSAGES (
 	CONTENT VARCHAR(256)
 );
@@ -30,9 +34,18 @@ CREATE TABLE MESSAGES (
 INSERT INTO MESSAGES (CONTENT) VALUES ('Hello World');
 
 SELECT * FROM MESSAGES;
-"@ | & "${Env:ProgramFiles(x86)}\SQLite Tools\sqlite3.exe"
+"@ | & "$App"
 
-if ($LastExitCode -ne 0)
+		if ($LastExitCode -ne 0)
+		{
+			exit $LastExitCode
+		}
+
+		$Found = $true
+	}
+}
+
+if (-not($Found))
 {
-	exit $LastExitCode
+	throw "sqlite3.exe not found"
 }
