@@ -17,15 +17,16 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-$SQLITEVERS = "3390400"
+$SQLITEVERS = "3400000"
 $Package = "sqlite-tools-win32-x86-$SQLITEVERS"
 $Source = "sqlite-amalgamation-$SQLITEVERS"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$SHA256BIN = "5FAF62F2C75B32ED9B795607FD29E82E6105BC8AEEB1E13DC80E67BE373C5ED3"
-$SHA256SRC = "9C99955B21D2374F3A385D67A1F64CBACB1D4130947473D25C77AD609C03B4CD"
+$SHA256BIN = "2EACA056B4BDFEB21900B828D91E8D96CDC263DC8FB5017EB1CCF56940A9036B"
+$SHA256SRC = "7C23EB51409315738C930A222CF7CD41518AE5823C41E60A81B93A07070EF22A"
+$VCVARSDIR = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build"
 
-$env:SQLITEVERS="3.39.04.00"
+$env:SQLITEVERS = "3.40.0.0"
 
 trap
 {
@@ -63,9 +64,9 @@ if (-not(Test-Path -Path "$Source"))
 }
 
 (
-	( "x64","${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"),
-	( "arm","${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsamd64_arm.bat"),
-	( "arm64","${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsamd64_arm64.bat")
+	( "x64","$VCVARSDIR\vcvars64.bat"),
+	( "arm","$VCVARSDIR\vcvarsamd64_arm.bat"),
+	( "arm64","$VCVARSDIR\vcvarsamd64_arm64.bat")
 ) | foreach {
 	$ARCH = $_[0]
 	$VCVARS = $_[1]
@@ -115,21 +116,94 @@ EXIT %ERRORLEVEL%
 foreach ($ARCH in "x86", "x64", "arm64") {
 	$Package = "sqlite-tools-win32-$ARCH-$SQLITEVERS"
 
-	$env:SOURCEDIR="$Package"
-
-	& "${env:WIX}bin\candle.exe" -nologo "sqlite-tools-win32-$ARCH.wxs"
-
-	if ($LastExitCode -ne 0)
+	if (-not(Test-Path -Path "$Package.msi"))
 	{
-		exit $LastExitCode
-	}
+		$env:SOURCEDIR="$Package"
 
-	& "${env:WIX}bin\light.exe" -nologo -cultures:null -out "$Package.msi" "sqlite-tools-win32-$ARCH.wixobj"
+		& "${env:WIX}bin\candle.exe" -nologo "sqlite-tools-win32-$ARCH.wxs"
 
-	if ($LastExitCode -ne 0)
-	{
-		exit $LastExitCode
+		if ($LastExitCode -ne 0)
+		{
+			exit $LastExitCode
+		}
+
+		& "${env:WIX}bin\light.exe" -nologo -cultures:null -out "$Package.msi" "sqlite-tools-win32-$ARCH.wixobj"
+
+		if ($LastExitCode -ne 0)
+		{
+			exit $LastExitCode
+		}
 	}
 }
 
+if (-not(Test-Path -Path "bundle"))
+{
+	$null = New-Item ./bundle -type Directory
 
+	(
+		( "x86","$VCVARSDIR\vcvars32.bat"),
+		( "x64","$VCVARSDIR\vcvars64.bat"),
+		( "arm","$VCVARSDIR\vcvarsamd64_arm.bat"),
+		( "arm64","$VCVARSDIR\vcvarsamd64_arm64.bat")
+	) | foreach {
+		$ARCH = $_[0]
+		$VCVARS = $_[1]
+		$ZIP = "sqlite-tools-win32-$ARCH-$SQLITEVERS"
+
+		$xmlDoc = [System.Xml.XmlDocument](Get-Content "Package.appxmanifest")
+
+		$nsMgr = New-Object -TypeName System.Xml.XmlNamespaceManager -ArgumentList $xmlDoc.NameTable
+
+		$nsmgr.AddNamespace("man", "http://schemas.microsoft.com/appx/manifest/foundation/windows10")
+
+		$xmlNode = $xmlDoc.SelectSingleNode("/man:Package/man:Identity", $nsmgr)
+
+		$xmlNode.ProcessorArchitecture = $ARCH
+		$xmlNode.Version = $env:SQLITEVERS
+
+		$xmlDoc.Save("AppxManifest.xml")
+
+		$MSI = "bundle\sqlite-tools-win32-$ARCH-$SQLITEVERS.msix"
+
+		@"
+CALL "$VCVARS"
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+IF EXIST "bin" RMDIR /q /s "bin"
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+MKDIR bin\assets
+COPY assets\*.png bin\assets
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+COPY "$ZIP\sqlite3.exe" "bin\sqlite3.exe"
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+IF EXIST "$MSI" DEL "$MSI"
+makeappx pack /m AppxManifest.xml /f mapping.ini /p "$MSI"
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+RMDIR /q /s "bin"
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+EXIT %ERRORLEVEL%
+"@ | & "$env:COMSPEC"
+
+		If ( $LastExitCode -ne 0 )
+		{
+			Exit $LastExitCode
+		}
+	}
+}
+
+$BUNDLE = "sqlite-tools-win32-$SQLITEVERS.msixbundle"
+
+If (-not(Test-Path -Path "$BUNDLE"))
+{
+		@"
+CALL "$VCVARSDIR\vcvars32.bat"
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+makeappx bundle /d bundle /p "$BUNDLE"
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+EXIT %ERRORLEVEL%
+"@ | & "$env:COMSPEC"
+
+	If ( $LastExitCode -ne 0 )
+	{
+		Exit $LastExitCode
+	}
+}
