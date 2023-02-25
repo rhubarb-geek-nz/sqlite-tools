@@ -1,5 +1,5 @@
 #
-#  Copyright 2022, Roger Brown
+#  Copyright 2023, Roger Brown
 #
 #  This file is part of rhubarb-geek-pi/sqlite-tools.
 #
@@ -17,16 +17,16 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-$SQLITEVERS = "3400100"
+$SQLITEVERS = "3410000"
 $Package = "sqlite-tools-win32-x86-$SQLITEVERS"
 $Source = "sqlite-amalgamation-$SQLITEVERS"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$SHA256BIN = "52DDA016FE4E05A0081D14D5B071DEE33EB3C042031689AB2122B39085E3D51C"
-$SHA256SRC = "49112CC7328392AA4E3E5DAE0B2F6736D0153430143D21F69327788FF4EFE734"
+$SHA256BIN = "16AD3A028A89DFF6E5050A3CDAFB7B7F2473DD02DDC7717AEDF7CB58090B9C07"
+$SHA256SRC = "146CE189B67FDBEFBF2D72CDC81E198D07FF643614CC9102E9BF063255E8E7E1"
 $VCVARSDIR = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build"
 
-$env:SQLITEVERS = "3.40.1.0"
+$env:SQLITEVERS = "3.41.0.0"
 
 trap
 {
@@ -37,7 +37,7 @@ if (-not(Test-Path -Path "$Package"))
 {
 	if (-not(Test-Path -Path "$Package.zip"))
 	{
-		Invoke-WebRequest -Uri "https://www.sqlite.org/2022/$Package.zip" -OutFile "$Package.zip"
+		Invoke-WebRequest -Uri "https://www.sqlite.org/2023/$Package.zip" -OutFile "$Package.zip"
 	}
 
 	if ((Get-FileHash -LiteralPath "$Package.zip" -Algorithm "SHA256").Hash -ne $SHA256BIN)
@@ -52,7 +52,7 @@ if (-not(Test-Path -Path "$Source"))
 {
 	if (-not(Test-Path -Path "$Source.zip"))
 	{
-		Invoke-WebRequest -Uri "https://www.sqlite.org/2022/$Source.zip" -OutFile "$Source.zip"
+		Invoke-WebRequest -Uri "https://www.sqlite.org/2023/$Source.zip" -OutFile "$Source.zip"
 	}
 
 	if ((Get-FileHash -LiteralPath "$Source.zip" -Algorithm "SHA256").Hash -ne $SHA256SRC)
