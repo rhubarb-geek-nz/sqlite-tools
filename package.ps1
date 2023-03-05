@@ -1,7 +1,7 @@
 #
 #  Copyright 2023, Roger Brown
 #
-#  This file is part of rhubarb-geek-pi/sqlite-tools.
+#  This file is part of rhubarb-geek-nz/sqlite-tools.
 #
 #  This program is free software: you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
