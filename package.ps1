@@ -1,7 +1,7 @@
 #
 #  Copyright 2023, Roger Brown
 #
-#  This file is part of rhubarb-geek-pi/sqlite-tools.
+#  This file is part of rhubarb-geek-nz/sqlite-tools.
 #
 #  This program is free software: you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -17,16 +17,16 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-$SQLITEVERS = "3410000"
+$SQLITEVERS = "3410100"
 $Package = "sqlite-tools-win32-x86-$SQLITEVERS"
 $Source = "sqlite-amalgamation-$SQLITEVERS"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$SHA256BIN = "16AD3A028A89DFF6E5050A3CDAFB7B7F2473DD02DDC7717AEDF7CB58090B9C07"
-$SHA256SRC = "146CE189B67FDBEFBF2D72CDC81E198D07FF643614CC9102E9BF063255E8E7E1"
+$SHA256BIN = "907D469D71AB1B6B0B5CA63817959E465FE0292243248B5AC9B6686D832AE54F"
+$SHA256SRC = "DF0D54BF246521360C8148F64E7E5AD07A4665B4F902339E844F4C493D535FF5"
 $VCVARSDIR = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build"
 
-$env:SQLITEVERS = "3.41.0.0"
+$env:SQLITEVERS = "3.41.1.0"
 
 trap
 {
