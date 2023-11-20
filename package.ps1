@@ -17,16 +17,16 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-$SQLITEVERS = "3410200"
-$Package = "sqlite-tools-win32-x86-$SQLITEVERS"
+$SQLITEVERS = "3440000"
+$Package = "sqlite-tools-win-x64-$SQLITEVERS"
 $Source = "sqlite-amalgamation-$SQLITEVERS"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$SHA256BIN = "1D0720C3A4C4619A91EB97F52931E3485F92B53D89E76B335C69C4D8C644C006"
-$SHA256SRC = "01DF06A84803C1AB4D62C64E995B151B2DBCF5DBC93BBC5EEE213CB18225D987"
+$SHA256BIN = "4F915B606486DB50CB609FABEB5BF607E3E30E471E8B377B6DC3541A6B2E3450"
+$SHA256SRC = "93299C8D2C8397622FE00BD807204B1F58815F45BDA8097BF93B3BF759A3EBAD"
 $VCVARSDIR = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build"
 
-$env:SQLITEVERS = "3.41.2.0"
+$env:SQLITEVERS = "3.44.0.0"
 
 trap
 {
@@ -45,7 +45,7 @@ if (-not(Test-Path -Path "$Package"))
 		throw "SHA256 mismatch for $Package.zip"
 	}
 
-	Expand-Archive -Path "$Package.zip" -DestinationPath .
+	Expand-Archive -Path "$Package.zip" -DestinationPath "$Package"
 }
 
 if (-not(Test-Path -Path "$Source"))
@@ -64,14 +64,14 @@ if (-not(Test-Path -Path "$Source"))
 }
 
 (
-	( "x64","$VCVARSDIR\vcvars64.bat"),
+	( "x86","$VCVARSDIR\vcvars32.bat"),
 	( "arm","$VCVARSDIR\vcvarsamd64_arm.bat"),
 	( "arm64","$VCVARSDIR\vcvarsamd64_arm64.bat")
 ) | foreach {
 	$ARCH = $_[0]
 	$VCVARS = $_[1]
 
-	$OutputDir = "sqlite-tools-win32-$ARCH-$SQLITEVERS"
+	$OutputDir = "sqlite-tools-win-$ARCH-$SQLITEVERS"
 
 	if (-not(Test-Path -Path "$OutputDir"))
 	{
@@ -114,20 +114,20 @@ EXIT %ERRORLEVEL%
 }
 
 foreach ($ARCH in "x86", "x64", "arm64") {
-	$Package = "sqlite-tools-win32-$ARCH-$SQLITEVERS"
+	$Package = "sqlite-tools-win-$ARCH-$SQLITEVERS"
 
 	if (-not(Test-Path -Path "$Package.msi"))
 	{
 		$env:SOURCEDIR="$Package"
 
-		& "${env:WIX}bin\candle.exe" -nologo "sqlite-tools-win32-$ARCH.wxs"
+		& "${env:WIX}bin\candle.exe" -nologo "sqlite-tools-win-$ARCH.wxs"
 
 		if ($LastExitCode -ne 0)
 		{
 			exit $LastExitCode
 		}
 
-		& "${env:WIX}bin\light.exe" -nologo -cultures:null -out "$Package.msi" "sqlite-tools-win32-$ARCH.wixobj"
+		& "${env:WIX}bin\light.exe" -nologo -cultures:null -out "$Package.msi" "sqlite-tools-win-$ARCH.wixobj"
 
 		if ($LastExitCode -ne 0)
 		{
@@ -148,7 +148,7 @@ if (-not(Test-Path -Path "bundle"))
 	) | foreach {
 		$ARCH = $_[0]
 		$VCVARS = $_[1]
-		$ZIP = "sqlite-tools-win32-$ARCH-$SQLITEVERS"
+		$ZIP = "sqlite-tools-win-$ARCH-$SQLITEVERS"
 
 		$xmlDoc = [System.Xml.XmlDocument](Get-Content "Package.appxmanifest")
 
@@ -163,7 +163,7 @@ if (-not(Test-Path -Path "bundle"))
 
 		$xmlDoc.Save("AppxManifest.xml")
 
-		$MSI = "bundle\sqlite-tools-win32-$ARCH-$SQLITEVERS.msix"
+		$MSI = "bundle\sqlite-tools-win-$ARCH-$SQLITEVERS.msix"
 
 		@"
 CALL "$VCVARS"
@@ -190,7 +190,7 @@ EXIT %ERRORLEVEL%
 	}
 }
 
-$BUNDLE = "sqlite-tools-win32-$SQLITEVERS.msixbundle"
+$BUNDLE = "sqlite-tools-win-$SQLITEVERS.msixbundle"
 
 If (-not(Test-Path -Path "$BUNDLE"))
 {

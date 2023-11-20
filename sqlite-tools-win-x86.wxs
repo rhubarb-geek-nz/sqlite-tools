@@ -22,14 +22,8 @@
   </Fragment>
   <Fragment>
     <ComponentGroup Id="ProductComponents">
-      <Component Id="Cad32675d827f4b61ac5f34cc79cf47d6" Guid="*" Directory="INSTALLDIR">
-        <File Id="F1b70cfb98ce142359f885e4e783b45f0" KeyPath="yes" Source="$(env.SOURCEDIR)\sqldiff.exe" />
-      </Component>
       <Component Id="C2b33f7ea030c45c1beba8c1ec653496c" Guid="*" Directory="INSTALLDIR">
         <File Id="F9d53805564f84ba48b7dd32a196987ac" KeyPath="yes" Source="$(env.SOURCEDIR)\sqlite3.exe" />
-      </Component>
-      <Component Id="C4614a308ea7a47979eef20c93733155a" Guid="*" Directory="INSTALLDIR">
-        <File Id="Ff65f5c408ddc4f72bec0a4a619fcedee" KeyPath="yes" Source="$(env.SOURCEDIR)\sqlite3_analyzer.exe" />
       </Component>
     </ComponentGroup>
   </Fragment>

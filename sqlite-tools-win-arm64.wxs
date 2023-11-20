@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="*" Name="SQLite Tools" Language="1033" Version="$(env.SQLITEVERS)" Manufacturer="www.sqlite.org" UpgradeCode="9BF0D91F-C582-4D5A-9D40-467173EBA500">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" Platform="x64" Description="SQLite Tools $(env.SQLITEVERS)" Comments="Command-line tool for managing SQLite database files" />
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="arm64" Description="SQLite Tools $(env.SQLITEVERS)" Comments="Command-line tool for managing SQLite database files" />
     <MediaTemplate EmbedCab="yes" />
     <Feature Id="ProductFeature" Title="setup" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
