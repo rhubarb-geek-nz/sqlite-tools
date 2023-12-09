@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="SQLite Tools" Language="1033" Version="$(env.SQLITEVERS)" Manufacturer="www.sqlite.org" UpgradeCode="5F00710F-D132-4C8E-8288-8343BE27C0AD">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="arm" Description="SQLite Tools $(env.SQLITEVERS)" Comments="A bundle of command-line tools for managing SQLite database files" />
+    <MediaTemplate EmbedCab="yes" />
+    <Feature Id="ProductFeature" Title="setup" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+    <Upgrade Id="{5F00710F-D132-4C8E-8288-8343BE27C0AD}">
+      <UpgradeVersion Maximum="$(env.SQLITEVERS)" Property="OLDPRODUCTFOUND" OnlyDetect="no" IncludeMinimum="yes" IncludeMaximum="no" />
+    </Upgrade>
+    <InstallExecuteSequence>
+      <RemoveExistingProducts After="InstallInitialize" />
+    </InstallExecuteSequence>
+  </Product>
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="SQLite Tools" />
+      </Directory>
+    </Directory>
+  </Fragment>
+  <Fragment>
+    <ComponentGroup Id="ProductComponents">
+      <Component Id="C2b33f7ea030c45c1beba8c1ec653496c" Guid="*" Directory="INSTALLDIR">
+        <File Id="F9d53805564f84ba48b7dd32a196987ac" KeyPath="yes" Source="$(env.SOURCEDIR)\sqlite3.exe" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

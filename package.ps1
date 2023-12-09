@@ -17,16 +17,21 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-$SQLITEVERS = "3440000"
+param(
+	$CertificateThumbprint = '601A8B683F791E51F647D34AD102C38DA4DDB65F',
+	$BundleThumbprint = '5F88DFB53180070771D4507244B2C9C622D741F8'
+)
+
+$SQLITEVERS = "3440200"
 $Package = "sqlite-tools-win-x64-$SQLITEVERS"
 $Source = "sqlite-amalgamation-$SQLITEVERS"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$SHA256BIN = "4F915B606486DB50CB609FABEB5BF607E3E30E471E8B377B6DC3541A6B2E3450"
-$SHA256SRC = "93299C8D2C8397622FE00BD807204B1F58815F45BDA8097BF93B3BF759A3EBAD"
+$SHA256BIN = "5844B24D61BB2103D7C1C6A589C341FFD1CFC165ACF98292619A9D11192C03FF"
+$SHA256SRC = "833BE89B53B3BE8B40A2E3D5FEDB635080E3EDB204957244F3D6987C2BB2345F"
 $VCVARSDIR = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build"
 
-$env:SQLITEVERS = "3.44.0.0"
+$env:SQLITEVERS = "3.44.2.0"
 
 trap
 {
@@ -63,13 +68,43 @@ if (-not(Test-Path -Path "$Source"))
 	Expand-Archive -Path "$Source.zip" -DestinationPath .
 }
 
-(
-	( "x86","$VCVARSDIR\vcvars32.bat"),
-	( "arm","$VCVARSDIR\vcvarsamd64_arm.bat"),
-	( "arm64","$VCVARSDIR\vcvarsamd64_arm64.bat")
-) | foreach {
-	$ARCH = $_[0]
-	$VCVARS = $_[1]
+$VCVARSARM = 'vcvarsarm.bat'
+$VCVARSARM64 = 'vcvarsarm64.bat'
+$VCVARSAMD64 = 'vcvars64.bat'
+$VCVARSX86 = 'vcvars32.bat'
+$VCVARSHOST = 'vcvars32.bat'
+
+switch ($Env:PROCESSOR_ARCHITECTURE)
+{
+	'AMD64' {
+		$VCVARSX86 = 'vcvarsamd64_x86.bat'
+		$VCVARSARM = 'vcvarsamd64_arm.bat'
+		$VCVARSARM64 = 'vcvarsamd64_arm64.bat'
+		$VCVARSHOST = $VCVARSAMD64
+	}
+	'ARM64' {
+		$VCVARSX86 = 'vcvarsarm64_x86.bat'
+		$VCVARSARM = 'vcvarsarm64_arm.bat'
+		$VCVARSAMD64 = 'vcvarsarm64_amd64.bat'
+		$VCVARSHOST = $VCVARSARM64
+	}
+	'X86' {
+		$VCVARSXARM64 = 'vcvarsx86_arm64.bat'
+		$VCVARSARM = 'vcvarsx86_arm.bat'
+		$VCVARSAMD64 = 'vcvarsx86_amd64.bat'
+	}
+	Default {
+		throw "Unknown architecture $Env:PROCESSOR_ARCHITECTURE"
+	}
+}
+
+$VCVARSARCH = @{'arm' = $VCVARSARM; 'arm64' = $VCVARSARM64; 'x86' = $VCVARSX86; 'x64' = $VCVARSAMD64}
+
+$VCVARSARCH | Format-Table -Property @{ l='Architecture'; e={$_.Name}},@{ l='Environment'; e={$_.Value}}
+
+foreach ($ARCH in 'x86', 'arm', 'arm64' )
+{
+	$VCVARS = ( '{0}\{1}' -f $VCVARSDIR, $VCVARSARCH[$ARCH] )
 
 	$OutputDir = "sqlite-tools-win-$ARCH-$SQLITEVERS"
 
@@ -92,6 +127,8 @@ IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
 RC.EXE /r /fosqlite3.res sqlite3.rc
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
 CL.EXE /MT /DWINVER=0x600 /D_WIN32_WINNT=0x600 "$Source\shell.c" "$Source\sqlite3.c" "-I$Source" "/Fe$OutputDir\sqlite3.exe" /link /VERSION:1.0 /SUBSYSTEM:CONSOLE sqlite3.res
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+signtool sign /a /sha1 "$CertificateThumbprint" /fd SHA256 /t http://timestamp.digicert.com "$OutputDir\sqlite3.exe"
 EXIT %ERRORLEVEL%
 "@ | & "$env:COMSPEC"
 
@@ -100,8 +137,10 @@ EXIT %ERRORLEVEL%
 			Exit $LastExitCode
 		}
 
-		foreach ($Name in "shell.obj", "sqlite3.obj", "sqlite3.res") {
-			if (Test-Path "$Name") {
+		foreach ($Name in 'shell.obj', 'sqlite3.obj', 'sqlite3.res')
+		{
+			if (Test-Path "$Name")
+			{
 				Remove-Item "$Name" -Force -Recurse
 			} 
 		}
@@ -113,7 +152,8 @@ EXIT %ERRORLEVEL%
 	}
 }
 
-foreach ($ARCH in "x86", "x64", "arm64") {
+foreach ($ARCH in 'x86', 'x64', 'arm', 'arm64')
+{
 	$Package = "sqlite-tools-win-$ARCH-$SQLITEVERS"
 
 	if (-not(Test-Path -Path "$Package.msi"))
@@ -133,6 +173,20 @@ foreach ($ARCH in "x86", "x64", "arm64") {
 		{
 			exit $LastExitCode
 		}
+
+		$VCVARS = ( '{0}\{1}' -f $VCVARSDIR, $VCVARSARCH[$ARCH] )
+
+		@"
+CALL "$VCVARS"
+signtool sign /a /sha1 "$CertificateThumbprint" /fd SHA256 /t http://timestamp.digicert.com "$Package.msi"
+EXIT %ERRORLEVEL%
+"@ | & "$env:COMSPEC"
+
+		If ( $LastExitCode -ne 0 )
+		{
+			Exit $LastExitCode
+		}
+
 	}
 }
 
@@ -140,14 +194,9 @@ if (-not(Test-Path -Path "bundle"))
 {
 	$null = New-Item ./bundle -type Directory
 
-	(
-		( "x86","$VCVARSDIR\vcvars32.bat"),
-		( "x64","$VCVARSDIR\vcvars64.bat"),
-		( "arm","$VCVARSDIR\vcvarsamd64_arm.bat"),
-		( "arm64","$VCVARSDIR\vcvarsamd64_arm64.bat")
-	) | foreach {
-		$ARCH = $_[0]
-		$VCVARS = $_[1]
+	foreach ($ARCH in 'x86', 'x64' , 'arm', 'arm64')
+	{
+		$VCVARS = ( '{0}\{1}' -f $VCVARSDIR, $VCVARSARCH[$ARCH] )
 		$ZIP = "sqlite-tools-win-$ARCH-$SQLITEVERS"
 
 		$xmlDoc = [System.Xml.XmlDocument](Get-Content "Package.appxmanifest")
@@ -180,6 +229,7 @@ makeappx pack /m AppxManifest.xml /f mapping.ini /p "$MSI"
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
 RMDIR /q /s "bin"
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+signtool sign /a /sha1 "$BundleThumbprint" /fd SHA256 /t http://timestamp.digicert.com "$MSI"
 EXIT %ERRORLEVEL%
 "@ | & "$env:COMSPEC"
 
@@ -194,11 +244,12 @@ $BUNDLE = "sqlite-tools-win-$SQLITEVERS.msixbundle"
 
 If (-not(Test-Path -Path "$BUNDLE"))
 {
-		@"
-CALL "$VCVARSDIR\vcvars32.bat"
+	@"
+CALL "$VCVARSDIR\$VCVARSHOST"
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
 makeappx bundle /d bundle /p "$BUNDLE"
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+signtool sign /a /sha1 "$BundleThumbprint" /fd SHA256 /t http://timestamp.digicert.com "$BUNDLE"
 EXIT %ERRORLEVEL%
 "@ | & "$env:COMSPEC"
 
@@ -207,3 +258,28 @@ EXIT %ERRORLEVEL%
 		Exit $LastExitCode
 	}
 }
+
+('arm', 'arm64', 'x86', 'x64') | ForEach-Object {
+	$ARCH = $_
+	$VCVARS = ( '{0}\{1}' -f $VCVARSDIR, $VCVARSARCH[$ARCH] )
+	$ARCHDIR = "sqlite-tools-win-$ARCH-$SQLITEVERS"
+	$EXE = "$ARCHDIR\sqlite3.exe"
+
+	$MACHINE = ( @"
+@CALL "$VCVARS" > NUL:
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+dumpbin /headers $EXE
+IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
+EXIT %ERRORLEVEL%
+"@ | & "$env:COMSPEC" /nologo /Q | Select-String -Pattern " machine " )
+
+	$MACHINE = $MACHINE.ToString().Trim()
+
+	$MACHINE = $MACHINE.Substring($MACHINE.LastIndexOf(' ')+1)
+
+	New-Object PSObject -Property @{
+			Architecture=$ARCH;
+			Executable=$EXE;
+			Machine=$MACHINE
+	}
+} | Format-Table -Property Architecture, Executable, Machine

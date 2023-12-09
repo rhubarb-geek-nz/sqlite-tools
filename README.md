@@ -1,8 +1,8 @@
 # SQLite Tools in an MSI
 
-This uses [WiX](https://wixtoolset.org/) to package [sqlite-tools-win-x64-3440000.zip](https://www.sqlite.org/2023/sqlite-tools-win-x64-3440000.zip) in an MSI.
+This uses [WiX](https://wixtoolset.org/) to package [sqlite-tools-win-x64-3440200.zip](https://www.sqlite.org/2023/sqlite-tools-win-x64-3440200.zip) in an MSI.
 
-`arm`, `arm64` and `x86` are built from [sqlite-amalgamation-3440000.zip](https://www.sqlite.org/2023/sqlite-amalgamation-3440000.zip).
+`arm`, `arm64` and `x86` are built from [sqlite-amalgamation-3440200.zip](https://www.sqlite.org/2023/sqlite-amalgamation-3440200.zip).
 
 See [SQLite Download Page](https://www.sqlite.org/download.html)
 
