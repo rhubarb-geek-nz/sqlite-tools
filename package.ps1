@@ -1,5 +1,5 @@
 #
-#  Copyright 2023, Roger Brown
+#  Copyright 2024, Roger Brown
 #
 #  This file is part of rhubarb-geek-nz/sqlite-tools.
 #
@@ -22,16 +22,20 @@ param(
 	$BundleThumbprint = '5F88DFB53180070771D4507244B2C9C622D741F8'
 )
 
-$SQLITEVERS = "3440200"
+$SQLITEVERS = '3450000'
 $Package = "sqlite-tools-win-x64-$SQLITEVERS"
 $Source = "sqlite-amalgamation-$SQLITEVERS"
-$ErrorActionPreference = "Stop"
-$ProgressPreference = "SilentlyContinue"
-$SHA256BIN = "5844B24D61BB2103D7C1C6A589C341FFD1CFC165ACF98292619A9D11192C03FF"
-$SHA256SRC = "833BE89B53B3BE8B40A2E3D5FEDB635080E3EDB204957244F3D6987C2BB2345F"
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+$SHA256BIN = '771D3442164BC3B38C88365F5305B8E2EFD9EDDD10D59AEAB114AC2EF99E2784'
+$SHA256SRC = 'BDE30D13EBDF84926DDD5E8B6DF145BE03A577A48FD075A087A5DD815BCDF740'
 $VCVARSDIR = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build"
 
-$env:SQLITEVERS = "3.44.2.0"
+$SQLITEVERSMAJOR=[Int32]::Parse($SQLITEVERS.Substring(0,1))
+$SQLITEVERSMINOR=[Int32]::Parse($SQLITEVERS.Substring(1,2))
+$SQLITEVERSBUILD=[Int32]::Parse($SQLITEVERS.Substring(3,2))
+$SQLITEVERSREVISION=[Int32]::Parse($SQLITEVERS.Substring(5,2))
+$env:SQLITEVERS = "$SQLITEVERSMAJOR.$SQLITEVERSMINOR.$SQLITEVERSBUILD.$SQLITEVERSREVISION"
 
 trap
 {
@@ -42,7 +46,7 @@ if (-not(Test-Path -Path "$Package"))
 {
 	if (-not(Test-Path -Path "$Package.zip"))
 	{
-		Invoke-WebRequest -Uri "https://www.sqlite.org/2023/$Package.zip" -OutFile "$Package.zip"
+		Invoke-WebRequest -Uri "https://www.sqlite.org/2024/$Package.zip" -OutFile "$Package.zip"
 	}
 
 	if ((Get-FileHash -LiteralPath "$Package.zip" -Algorithm "SHA256").Hash -ne $SHA256BIN)
@@ -57,7 +61,7 @@ if (-not(Test-Path -Path "$Source"))
 {
 	if (-not(Test-Path -Path "$Source.zip"))
 	{
-		Invoke-WebRequest -Uri "https://www.sqlite.org/2023/$Source.zip" -OutFile "$Source.zip"
+		Invoke-WebRequest -Uri "https://www.sqlite.org/2024/$Source.zip" -OutFile "$Source.zip"
 	}
 
 	if ((Get-FileHash -LiteralPath "$Source.zip" -Algorithm "SHA256").Hash -ne $SHA256SRC)
@@ -124,7 +128,7 @@ foreach ($ARCH in 'x86', 'arm', 'arm64' )
 		@"
 CALL "$VCVARS"
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
-RC.EXE /r /fosqlite3.res sqlite3.rc
+RC.EXE /r "/DSQLITEVERSINT4=$SQLITEVERSMAJOR,$SQLITEVERSMINOR,$SQLITEVERSBUILD,$SQLITEVERSREVISION" "/DSQLITEVERSSTR3NULL=\""$SQLITEVERSMAJOR.$SQLITEVERSMINOR.$SQLITEVERSBUILD\0\""" /fosqlite3.res sqlite3.rc
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
 CL.EXE /MT /DWINVER=0x600 /D_WIN32_WINNT=0x600 "$Source\shell.c" "$Source\sqlite3.c" "-I$Source" "/Fe$OutputDir\sqlite3.exe" /link /VERSION:1.0 /SUBSYSTEM:CONSOLE sqlite3.res
 IF ERRORLEVEL 1 EXIT %ERRORLEVEL%
@@ -280,6 +284,8 @@ EXIT %ERRORLEVEL%
 	New-Object PSObject -Property @{
 			Architecture=$ARCH;
 			Executable=$EXE;
-			Machine=$MACHINE
+			Machine=$MACHINE;
+			FileVersion=(Get-Item $EXE).VersionInfo.FileVersion;
+			ProductVersion=(Get-Item $EXE).VersionInfo.ProductVersion
 	}
-} | Format-Table -Property Architecture, Executable, Machine
+} | Format-Table -Property Architecture, Executable, Machine, FileVersion, ProductVersion
