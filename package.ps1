@@ -1,5 +1,5 @@
 #
-#  Copyright 2024, Roger Brown
+#  Copyright 2025, Roger Brown
 #
 #  This file is part of rhubarb-geek-nz/sqlite-tools.
 #
@@ -22,13 +22,13 @@ param(
 	$BundleThumbprint = '5F88DFB53180070771D4507244B2C9C622D741F8'
 )
 
-$SQLITEVERS = '3470000'
+$SQLITEVERS = '3480000'
 $Package = "sqlite-tools-win-x64-$SQLITEVERS"
 $Source = "sqlite-amalgamation-$SQLITEVERS"
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$SHA256BIN = 'EC48CA5F828A77EA0A77C6F501B24F85B296061C633D12E06B762EB448C91FAD'
-$SHA256SRC = '2842FDDBB1CC33F66C7DA998A57535F14A6BFEE159676A07BB4BF3E59375D93E'
+$SHA256BIN = '623E87D71FF21251829307970F3609A2592CB89FB354768A4E6FD911C7FD398B'
+$SHA256SRC = 'D9A15A42DB7C78F88FE3D3C5945ACCE2F4BFE9E4DA9F685CD19F6EA1D40AA884'
 $VCVARSDIR = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build"
 
 $SQLITEVERSMAJOR=[Int32]::Parse($SQLITEVERS.Substring(0,1))
@@ -46,7 +46,7 @@ if (-not(Test-Path -Path "$Package"))
 {
 	if (-not(Test-Path -Path "$Package.zip"))
 	{
-		Invoke-WebRequest -Uri "https://www.sqlite.org/2024/$Package.zip" -OutFile "$Package.zip"
+		Invoke-WebRequest -Uri "https://www.sqlite.org/2025/$Package.zip" -OutFile "$Package.zip"
 	}
 
 	if ((Get-FileHash -LiteralPath "$Package.zip" -Algorithm "SHA256").Hash -ne $SHA256BIN)
@@ -61,7 +61,7 @@ if (-not(Test-Path -Path "$Source"))
 {
 	if (-not(Test-Path -Path "$Source.zip"))
 	{
-		Invoke-WebRequest -Uri "https://www.sqlite.org/2024/$Source.zip" -OutFile "$Source.zip"
+		Invoke-WebRequest -Uri "https://www.sqlite.org/2025/$Source.zip" -OutFile "$Source.zip"
 	}
 
 	if ((Get-FileHash -LiteralPath "$Source.zip" -Algorithm "SHA256").Hash -ne $SHA256SRC)
@@ -149,11 +149,6 @@ EXIT %ERRORLEVEL%
 			} 
 		}
 	}
-
-	if (-not(Test-Path -Path "$OutputDir.zip"))
-	{
-		Compress-Archive -DestinationPath "$OutputDir.zip" -LiteralPath "$OutputDir"
-	}
 }
 
 foreach ($ARCH in 'x86', 'x64', 'arm', 'arm64')
@@ -191,6 +186,8 @@ EXIT %ERRORLEVEL%
 			Exit $LastExitCode
 		}
 
+		Remove-Item "sqlite-tools-win-$ARCH.wixobj"
+		Remove-Item "sqlite-tools-win-$ARCH-$SQLITEVERS.wixpdb"
 	}
 }
 
@@ -289,3 +286,45 @@ EXIT %ERRORLEVEL%
 			ProductVersion=(Get-Item $EXE).VersionInfo.ProductVersion
 	}
 } | Format-Table -Property Architecture, Executable, Machine, FileVersion, ProductVersion
+
+$ExeList = New-Object -TypeName 'System.Collections.ArrayList'
+
+foreach ($ARCH in 'x86', 'arm', 'arm64')
+{
+	$ARCHDIR = "sqlite-tools-win-$ARCH-$SQLITEVERS"
+	$EXE = "$ARCHDIR\sqlite3.exe"
+
+	if (Test-Path $ARCH)
+	{
+		Remove-Item $ARCH -Recurse
+	}
+
+	if (Test-Path $EXE)
+	{
+		$Null = New-Item $ARCH -ItemType 'Directory'
+		$Null = $ExeList.Add($ARCH)
+		Copy-Item $EXE $ARCH
+	}
+}
+
+$ZipName = "sqlite-tools-win-$SQLITEVERS.zip"
+
+if (Test-Path $ZipName)
+{
+	Remove-Item $ZipName
+}
+
+if ($ExeList)
+{
+	Compress-Archive $ExeList -DestinationPath $ZipName
+}
+
+Remove-Item 'bundle' -Recurse
+
+$SqlDirList = Get-ChildItem . -Directory -Filter 'sql*'
+
+$SqlDirList | Remove-Item -Recurse
+
+$ExeList | Remove-Item -Recurse
+
+Remove-Item "sqlite-tools-win-x64-$SQLITEVERS.zip","sqlite-amalgamation-$SQLITEVERS.zip"
